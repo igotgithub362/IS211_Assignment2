@@ -3,88 +3,67 @@
 
 """IS 211 Week 2 Assignment"""
 
-import urllib2
-import csv
+import argparse
 import datetime
 import logging
-import argparse
+import shutil
 import sys
+import tempfile
+import urllib.request
+
+
+def downloadData(url):
+    with urllib.request.urlopen(url) as response:
+        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+            shutil.copyfileobj(response, tmp_file)
+    return tmp_file.name
+
+
+def processData(birthdayfile):
+    birthdict = dict()
+    with open(birthdayfile) as csvfile:
+        for i, line in enumerate(csvfile):
+            line = line.strip().split(',')
+            try:
+                birthdict[line[0]] = (line[1], datetime.datetime.strptime(line[2], "%d/%m/%Y").date())
+            except:
+                logging.error('Error processing line #{0} for ID #{1}'.format(i + 1, line[0]))
+    return birthdict
+
+
+def displayPerson(id, personData):
+    print(personData.get(str(id), "No user with the id located"))
+
+
+def assignment2():
+    logging.basicConfig(filename='error.log', level=logging.ERROR, filemode='w')
+
 
 def main():
+    #parser = argparse.ArgumentParser()
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--url")
+    
+    parser.add_argument("--url url", help='The url you wish to use to find the birthday csv file', type=str)
+    args = parser.parse_args()
+    assignment2()  # function for initializing logger
+    try:
+        csvData = downloadData(args.url)
+    except:
+        logging.critical('{0}:  unable to resolve URL {1}'.format(sys.exc_info(), args.url))
+        print('An error has occurred, Please see error log.')
+        exit()
+    try:
+        csvData = processData(csvData)
+    except:
+        logging.critical('{0}:  Unresolvable processing error with file {1}'.format(sys.exc_info(), csvData))
+        print('An error has occurred, Please see error log.')
+        exit()
 
-	parser = argparse.ArgumentParser()
-	parser.add_argument("--url")
-	args = parser.parse_args()
-	url = args.url
-
-	logger = logging.getLogger("assignment2")
-	logger.setLevel(logging.ERROR)
-	fh = logging.FileHandler('error.log')
-	fh.setLevel(logging.ERROR)
-	logger.addHandler(fh)
-
-	format = "%d/%m/%Y"
-	
-	if url is None:
-		sys.exit()
-	else:
-
-		def downloaddata(url):
-			try:
-				request = urllib2.urlopen(url)
-			except:
-				print "Download data error, check URL and try again"
-				sys.exit()
-			return request
-
+    while True:
+        idlookup = int(input("Please enter a ID to lookup, or type 0 or a negative number to quit: "))
+        displayPerson(idlookup, csvData) if idlookup > 0 else exit()
 
 
-		def processdata(data):
-			readerdata = csv.reader(data)
-
-			dictionary = {}
-			line = 1
-			birthday = datetime.datetime.strptime('04/13/2014',format)
-
-			for row in readerdata:
-				if(row[0] == 'id'):
-					line += 1
-				else:
-					id = int(row[0])
-					name = row[1]
-					try:
-						birthday = datetime.datetime.strptime(row[2],format)
-					except:
-						logger.error("ERROR:assignment2:Error processing line #%d for ID #%d", line, id)
-						
-					dictionary[id] = (name,birthday)
-					
-					line += 1
-			return dictionary
-		
-
-
-		def displayPerson(id):
-			try:
-				print "Person #%d is %s with a birthday of %s" % (id, personData[id][0], datetime.datetime.strftime(personData[id][1],format))
-			except:
-				print "Display person error, retry ID number"
-		
-		csvData = downloaddata(url)
-		personData = processdata(csvData)
-		while(1):
-			print "Enter ID?",
-			id = raw_input()
-			try:
-				id = int(id)
-			except:
-				print "Please Enter a Number"
-				continue
-			if id <= 0:
-				print "Input <= 0, Exiting Program"
-				break
-			else:
-				displayPerson(id)
-
-		
 main()
