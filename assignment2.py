@@ -27,7 +27,7 @@ def processData(birthdayfile):
             try:
                 birthdict[line[0]] = (line[1], datetime.datetime.strptime(line[2], "%d/%m/%Y").date())
             except:
-                logging.error('Error processing line #{0} for ID #{1}'.format(i + 1, line[0]))
+                logging.error('Error processing the line #{0} for ID #{1}'.format(i + 1, line[0]))
     return birthdict
 
 
@@ -44,7 +44,6 @@ def main():
     
     parser = argparse.ArgumentParser()
     parser.add_argument("--url")
-    
     parser.add_argument("--url url", help='The url you wish to use to find the birthday csv file', type=str)
     args = parser.parse_args()
     assignment2()  # function for initializing logger
